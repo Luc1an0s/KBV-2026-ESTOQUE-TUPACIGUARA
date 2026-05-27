@@ -56,7 +56,6 @@ def get_query_data():
                 database=DB_NAME
             )
 
-            # Sua nova query de estoque adaptada para o bloco de texto Python
             query = """
             SELECT
                 sano AS AREA,

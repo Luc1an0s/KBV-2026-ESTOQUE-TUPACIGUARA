@@ -103,8 +103,8 @@ def update_google_sheets(df):
         # Converte o DataFrame para o formato de lista que o gspread aceita
         dados = [df_limpo.columns.values.tolist()] + df_limpo.values.tolist()
         
-        # Atualiza a partir da célula A1
-        aba.update('A1', dados)
+        # Atualiza a partir da célula A2
+        aba.update('A2', dados)
         
         print(f"Planilha de estoque atualizada com sucesso em {datetime.now().strftime('%H:%M:%S')}")
     except Exception as e:

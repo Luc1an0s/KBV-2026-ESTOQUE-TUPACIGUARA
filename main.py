@@ -34,7 +34,7 @@ DB_PORT = get_env_int("DB_PORT", 3306)
 
 # Configurações do Google Sheets
 SHEET_ID = os.getenv('SHEET_ID')
-ABA_NOME = os.getenv('ABA_NOME')
+ABA_ESTOQUE = os.getenv('ABA_ESTOQUE')
 GOOGLE_JSON_PATH = os.getenv('GOOGLE_JSON_PATH')
 
 def get_query_data():
@@ -58,13 +58,14 @@ def get_query_data():
 
             query = """
             SELECT
+                storeno AS LOJA,
                 sano AS AREA,
-                prdno AS CODIGO,
+                trim(prdno) AS CODIGO,
                 prd.name AS PRODUTO,
                 LEFT(stksa.grade, 5) AS GRADE,
                 RIGHT(stksa.grade, 3) AS PACOTE,
-                qtty_varejo / 1000 AS estoque_atual,
-                type.name AS TIPO_PRODUTO
+                qtty_varejo / 1000 AS 'ESTOQUE ATUAL',
+                type.name AS 'TIPO DO PRODUTO'
             FROM stksa
             JOIN prd ON prd.no = stksa.prdno
             JOIN type ON prd.typeno = type.no
@@ -74,6 +75,11 @@ def get_query_data():
             """
 
             df = pd.read_sql(query, conn)
+            
+            if 'CODIGO' in df.columns:
+                df['CODIGO'] = pd.to_numeric(df['CODIGO'], errors='coerce').fillna(0).astype(int)
+            # ----------------------------------------
+
             conn.close()
             return df
             
@@ -92,19 +98,19 @@ def update_google_sheets(df):
         client = gspread.authorize(creds)
         
         planilha = client.open_by_key(SHEET_ID)
-        aba = planilha.worksheet(ABA_NOME)
+        aba = planilha.worksheet(ABA_ESTOQUE)
         
         # Limpa a aba antes de inserir os novos dados de estoque
         aba.clear()
         
-        # Preenche valores nulos com 0 ou texto vazio se necessário
+        # Preenche valores nulos com texto vazio
         df_limpo = df.fillna("")
         
         # Converte o DataFrame para o formato de lista que o gspread aceita
         dados = [df_limpo.columns.values.tolist()] + df_limpo.values.tolist()
         
-        # Atualiza a partir da célula A2
-        aba.update('A2', dados)
+        # Atualiza a partir da célula A1
+        aba.update('A1', dados)
         
         print(f"Planilha de estoque atualizada com sucesso em {datetime.now().strftime('%H:%M:%S')}")
     except Exception as e:
